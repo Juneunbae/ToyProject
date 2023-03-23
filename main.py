@@ -6,5 +6,5 @@ from route.Search import SearchProduct
 
 app = FastAPI();
 
-app.include_router(DetailProduct.router, prefix = "/search" ,tags=["Search"])
-app.include_router(SearchProduct.router, prefix="/detail", tags=["Detail"])
+app.include_router(DetailProduct.router ,tags=["Detail"])
+app.include_router(SearchProduct.router, tags=["Search"])
