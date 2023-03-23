@@ -25,7 +25,7 @@ def detail(product_name : str, product_id : int) :
 
     # start = page,
     # display = 한번에 표시할 검색 결과 개수
-    # sort - sim : 정확도 순 내림차순,
+    # sort - sim : 정확도 순 내림차순
     # sort - date : 날짜 순 내림차순
     url = f"https://openapi.naver.com/v1/search/shop?query={Product}&start=1&display=100"  # JSON 결과
 
@@ -55,7 +55,7 @@ def MarketDetail(product_name : str, item_num : int, page_num : Optional[int] = 
         "cookie": "PHPSESSID=8kih11umha03373dsdg9cfcm4raf1anbbtjsj145djc0nm9ihkt1; cookie_check=0; shop_authenticate=Y; Xtime=1679465643; __cfruid=bfec21dd288ca16d5891ab78b3c22d543f6f9c0f-1679465643; _ga=GA1.1.604851465.1679465649; amp_65bebb=sgxZNhjsNBv7ZBQiH1cQ3k.bnVsbA==..1gs429hnu.1gs43ojnu.c.1.d; _ga_BJ5N3PD9QG=GS1.1.1679468842.2.1.1679470872.60.0.0",
         "referer": "https://www.kurly.com/main",
         "sentry-trace": "0eb57706ddf44b79b4126aba47a9826b-973bbc0b66246190-1",
-        "uger-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.44"
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.44"
     }
 
     SessionRes = requests.get(SessionURL, headers=header)
