@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 
-from domain.Detail import DetailProduct
-from domain.Search import SearchProduct
+# domain -> route
+from route.Detail import DetailProduct
+from route.Search import SearchProduct
 
 app = FastAPI();
 
-app.include_router(SearchProduct.router)
-app.include_router(DetailProduct.router)
+app.include_router(DetailProduct.router, prefix = "/search" ,tags=["Search"])
+app.include_router(SearchProduct.router, prefix="/detail", tags=["Detail"])
