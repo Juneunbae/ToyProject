@@ -15,6 +15,6 @@ def NaverDetail(product_name : str, product_id : int) :
     return Naver().Detail(product_name=product_name, product_id=product_id)
 
 
-@router.get("/market/{product_name}/{item_num}", status_code=status.HTTP_200_OK, description="마켓컬리 상품 상세정보")
-def KurlyDetail(product_name : str, item_num : int, page_num : Optional[int] = 1) :
-    return MarketKurly().Detail(product_name=product_name, item_num=item_num, page_num=page_num)
+@router.get("/market/{item_num}", status_code=status.HTTP_200_OK, description="마켓컬리 상품 상세정보")
+def KurlyDetail(item_num : int) :
+    return MarketKurly().Detail(item_num=item_num)
