@@ -4,7 +4,7 @@ DeleteList = """
 
 InsertList = """
     INSERT INTO Product
-    (ProductId, ProductName, Price, Seller, Picture, Shop, Created) 
+    (PRODUCT_ID, PRODUCT_NAME, PRICE, SELLER, IMAGE, SHOP, CREATED) 
     VALUES
     (%s, %s, %s, "마켓컬리", %s, "MarketKurly", Now())
 """

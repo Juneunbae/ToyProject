@@ -5,6 +5,8 @@ import requests
 from Database.database import Connect
 from Database.query.Product import DeleteList, InsertList, SelectDetail
 
+import time
+
 
 class MarketKurly :
     def __init__(self):
@@ -12,24 +14,30 @@ class MarketKurly :
         self.cur = self.conn.cursor()
 
     def Detail(self, item_num):
+        start = time.time()
         i = item_num - 1
 
         self.cur.execute(SelectDetail)
         result = self.cur.fetchall()
 
-        DetailData = {
-            "ProductId" : result[i][1],
-            "ProductName" : result[i][2],
-            "Price" : result[i][3],
-            "Seller" : result[i][4],
-            "Picture" : result[i][5],
-            "Shop" : result[i][6],
-            "Created" : result[i][7],
-        }
+        DetailData = [{
+            "PRODUCT_ID" : result[i][1],
+            "PRODUCT_NAME" : result[i][2],
+            "PRICE" : result[i][3],
+            "SELLER" : result[i][4],
+            "OPTION" : " ",
+            "IMAGE" : result[i][5],
+            # "Shop" : result[i][6],
+            # "Created" : result[i][7],
+        }]
+        end = time.time()
+
+        print(f"수행 시간 : {end - start}")
 
         return DetailData
 
     def Search(self, product_name, page_num):
+        start = time.time()
         self.cur.execute(DeleteList)
 
         SessionURL = "https://www.kurly.com/nx/api/session"
@@ -73,11 +81,26 @@ class MarketKurly :
 
             result = datas['data']
 
+            ResultList = []
+
             for i in range(len(datas['data'])) :
                 self.cur.execute(InsertList, (str(result[i].get("no")), str(result[i].get("name")), str(result[i].get("sales_price")), str(result[i].get("list_image_url"))))
                 self.conn.commit()
 
-            return result
+                ResultList.append(
+                    {
+                        "PRODUCT_ID" : str(result[i].get("no")),
+                        "PRODUCT_NAME" : str(result[i].get("name")),
+                        "SELLER" : "마켓컬리",
+                        "PRICE" : str(result[i].get("sales_price")),
+                        "OPTION" : " ",
+                        "IMAGE" : str(result[i].get("list_image_url")),
+                    }
+                )
+
+            end = time.time()
+            print(f"수행 시간 : {end - start}")
+            return ResultList
 
         else:
             raise HTTPException(status_code=404, detail="잘못된 경로 입니다.")
