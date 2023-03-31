@@ -3,7 +3,8 @@ from fastapi import HTTPException
 import requests
 
 from Database.database import Connect
-from Database.query.Product import DeleteList, InsertList, SelectDetail
+from Database.query.Product import InsertList, SelectDetail, InsertLog, InsertNoLog
+from webhook import Webhook_basic, Webhook_embed
 
 import time
 
@@ -15,30 +16,65 @@ class MarketKurly :
 
     def Detail(self, item_num):
         start = time.time()
+
         i = item_num - 1
 
         self.cur.execute(SelectDetail)
         result = self.cur.fetchall()
 
-        DetailData = [{
-            "PRODUCT_ID" : result[i][1],
-            "PRODUCT_NAME" : result[i][2],
-            "PRICE" : result[i][3],
-            "SELLER" : result[i][4],
-            "OPTION" : " ",
-            "IMAGE" : result[i][5],
-            # "Shop" : result[i][6],
-            # "Created" : result[i][7],
-        }]
-        end = time.time()
+        PRODUCT_ID = result[i][0]
+        PRODUCT_NAME = result[i][1]
+        PRICE = result[i][2]
+        SELLER = result[i][3]
+        IMAGE = result[i][4]
+        SHOP = result[i][5]
+        Created = result[i][6]
 
-        print(f"수행 시간 : {end - start}")
+        try :
+            DetailData = [{
+                "PRODUCT_ID" : PRODUCT_ID,
+                "PRODUCT_NAME" : PRODUCT_NAME,
+                "PRICE" : PRICE,
+                "SELLER" : SELLER,
+                "OPTION" : " ",
+                "IMAGE" : IMAGE,
+                # "Shop" : SHOP,
+                "Created" : Created,
+            }]
+            print(DetailData)
+            end = time.time()
 
-        return DetailData
+            print(f"수행 시간 : {end - start}")
+
+            self.cur.execute(InsertLog, (f"'{PRODUCT_NAME}' 조회 성공", PRODUCT_ID, PRODUCT_NAME))
+            self.conn.commit()
+
+            msg = f"""
+                 \n
+                 상품 ID : {PRODUCT_ID}
+                 \n
+                 [{Created}]
+            """
+
+            set_url = f"https://www.kurly.com/goods/{PRODUCT_ID}"
+
+            Webhook_embed(title = f"{PRODUCT_NAME} 조회 성공", description = msg, thumbnail_image = IMAGE, set_url=set_url)
+
+            return DetailData
+
+        except :
+            self.cur.execute(InsertNoLog, "조회 실패")
+            self.conn.commit()
+
+            msg = "검색결과가 없습니다. 조회를 실패하였습니다."
+
+            Webhook_embed(title="조회 실패 알림", description=msg, thumbnail_image='', set_url = None)
+
+            raise HTTPException(status_code=404, detail="검색결과가 없습니다.")
+
 
     def Search(self, product_name, page_num):
         start = time.time()
-        self.cur.execute(DeleteList)
 
         SessionURL = "https://www.kurly.com/nx/api/session"
 
@@ -71,9 +107,9 @@ class MarketKurly :
             'per_page': 20,
             'filters': ''
         }
+        Webhook_basic(f"{product_name} 검색 시도..")
 
         res = requests.get(url, headers=header, json=data)
-
 
         if res.status_code == 200:
             # http status 포함
@@ -84,7 +120,8 @@ class MarketKurly :
             ResultList = []
 
             for i in range(len(datas['data'])) :
-                self.cur.execute(InsertList, (str(result[i].get("no")), str(result[i].get("name")), str(result[i].get("sales_price")), str(result[i].get("list_image_url"))))
+                self.cur.execute(InsertList, (str(result[i].get("no")), str(result[i].get("name")), str(result[i].get("sales_price")), str(result[i].get("list_image_url")), \
+                                              str(result[i].get("name")), str(result[i].get("sales_price")), str(result[i].get("list_image_url"))))
                 self.conn.commit()
 
                 ResultList.append(
@@ -98,9 +135,12 @@ class MarketKurly :
                     }
                 )
 
+            Webhook_basic(f"{product_name} 검색 완료")
+
             end = time.time()
             print(f"수행 시간 : {end - start}")
             return ResultList
 
         else:
+            Webhook_basic(f"{product_name} 검색 실패")
             raise HTTPException(status_code=404, detail="잘못된 경로 입니다.")

@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from route.Detail import DetailProduct
 from route.Search import SearchProduct
 
+import discord
+
 
 description = """
 ToyProject - API 🚀
