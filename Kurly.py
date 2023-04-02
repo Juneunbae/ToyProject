@@ -43,12 +43,11 @@ def Kurly(PRODUCT_NAME) :
 
     for i in range(5) :
         lst.append({
-            "ProductId" : search[i].get("no"),
-            "ProductName" : search[i].get("name"),
-            "Price" : search[i].get("sales_price"),
-            "Seller" : "마켓컬리",
-            "Picture" : search[i].get("list_image_url"),
-            "Shop" : "Kurly",
+            "PRODUCT_ID" : search[i].get("no"),
+            "PRODUCT_NAME" : search[i].get("name"),
+            "PRICE" : search[i].get("sales_price"),
+            "SELLER" : "마켓컬리",
+            "IMAGE" : search[i].get("list_image_url"),
+            "SHOP" : "Kurly",
         })
-
     return lst

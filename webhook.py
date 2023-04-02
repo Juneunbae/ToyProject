@@ -1,6 +1,6 @@
 from discord_webhook import DiscordWebhook, DiscordEmbed
 
-webhook_url =
+webhook_url = 'https://discord.com/api/webhooks/1090625465422708777/xhihjuFS9ACpgB0UCksklpL6Idz6vyAG9yY8F1kzKoe75IFaWfuGW_8pHaoVSBY5cHzr'
 
 
 def Webhook_basic(description) :

@@ -1,10 +1,14 @@
+from math import prod
 from fastapi import HTTPException
 
 import requests
 
 from Database.database import Connect
-from Database.query.Product import InsertList, SelectDetail, InsertLog, InsertNoLog
+from Database.query.Product import InsertList, InsertLog, InsertNoLog, INSERTLog_HP
+from Kurly import Kurly
 from webhook import Webhook_basic, Webhook_embed
+
+from datetime import datetime
 
 import time
 
@@ -14,23 +18,34 @@ class MarketKurly :
         self.conn = Connect()
         self.cur = self.conn.cursor()
 
-    def Detail(self, item_num):
+    def Detail(self, item_num, product_name):
         start = time.time()
 
         i = item_num - 1
+        
+        PRO_NAME = product_name
 
-        self.cur.execute(SelectDetail)
+        self.cur.execute(
+            f"""
+                SELECT *
+                FROM CHECKBOX.Products
+                WHERE Shop = 'Kurly' AND PRODUCT_NAME LIKE '%{PRO_NAME}%';
+            """
+        )
+        # product_id 검색
         result = self.cur.fetchall()
+        
+        # DB 내 검색 결과가 있을 경우, DB 내 검색 결과 반환
+        if len(result) >= 1 :
+            PRODUCT_ID = result[i][0]
+            PRODUCT_NAME = result[i][1]
+            PRICE = result[i][2]
+            SELLER = result[i][3]
+            IMAGE = result[i][4]
+            SHOP = result[i][5]
+            Created = result[i][6]
+            # item_num으로 인덱스 파싱 완료
 
-        PRODUCT_ID = result[i][0]
-        PRODUCT_NAME = result[i][1]
-        PRICE = result[i][2]
-        SELLER = result[i][3]
-        IMAGE = result[i][4]
-        SHOP = result[i][5]
-        Created = result[i][6]
-
-        try :
             DetailData = [{
                 "PRODUCT_ID" : PRODUCT_ID,
                 "PRODUCT_NAME" : PRODUCT_NAME,
@@ -46,31 +61,65 @@ class MarketKurly :
 
             print(f"수행 시간 : {end - start}")
 
-            self.cur.execute(InsertLog, (f"'{PRODUCT_NAME}' 조회 성공", PRODUCT_ID, PRODUCT_NAME))
+            self.cur.execute(InsertLog, (f"'{PRODUCT_NAME} 조회 성공", PRODUCT_ID, PRODUCT_NAME))
             self.conn.commit()
 
             msg = f"""
-                 \n
-                 상품 ID : {PRODUCT_ID}
-                 \n
-                 [{Created}]
+                \n
+                상품 ID : {PRODUCT_ID}
+                \n
+                [{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}]
             """
 
             set_url = f"https://www.kurly.com/goods/{PRODUCT_ID}"
 
-            Webhook_embed(title = f"{PRODUCT_NAME} 조회 성공", description = msg, thumbnail_image = IMAGE, set_url=set_url)
+            Webhook_embed(title = f"{PRODUCT_NAME}", description = msg, thumbnail_image = IMAGE, set_url=set_url)
 
             return DetailData
 
-        except :
-            self.cur.execute(InsertNoLog, "조회 실패")
-            self.conn.commit()
+        # DB 내 검색 결과가 없고, 홈페이지 내 검색 결과가 있을 경우 상품 5개 반환
+        elif len(result) == 0 :
+            Webhook_basic(f"홈페이지 검색 시도....")
+            try :
+                KurlyResult = Kurly(product_name)
+                
+                for z in range(0, 5) :
+                    KurlyResult_PRO_ID = KurlyResult[z].get("PRODUCT_ID")
+                    KurlyResult_PRO_NAME = KurlyResult[z].get("PRODUCT_NAME")
+                    KurlyResult_PRO_IMAGE = KurlyResult[z].get("IMAGE")
+                    
+                    self.cur.execute(
+                        f"""
+                            INSERT INTO LOG (CONTENT, RECIPIENT, SENDER, PRODUCT_ID, PRODUCT_NAME, CREATED)
+                            VALUES ("DB X, 홈페이지 내 {product_name} 조회 성공", NULL, "Discord", %s, %s, NOW())
+                        """, (KurlyResult_PRO_ID, KurlyResult_PRO_NAME))
+                    
+                    self.conn.commit()
+                    
+                    KurlyMSG = f"""
+                        \n
+                        상품 ID : {KurlyResult_PRO_ID}
+                        \n
+                        [{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}]
+                    """
+                    
+                    set_url = f"https://www.kurly.com/goods/{KurlyResult_PRO_ID}"
+                    
+                    Webhook_embed(title = f"{KurlyResult_PRO_NAME}", description = KurlyMSG, thumbnail_image = KurlyResult_PRO_IMAGE, set_url=set_url)
+                
+                Webhook_basic(f"홈페이지 검색 완료")
+                return KurlyResult
+            
+            # DB + 홈페이지 모두 검색 결과가 없을 경우
+            except :
+                self.cur.execute(InsertNoLog, "조회 실패")
+                self.conn.commit()
 
-            msg = "검색결과가 없습니다. 조회를 실패하였습니다."
+                msg = "검색결과가 없습니다. 조회를 실패하였습니다."
 
-            Webhook_embed(title="조회 실패 알림", description=msg, thumbnail_image='', set_url = None)
+                Webhook_embed(title="조회 실패 알림", description=msg, thumbnail_image='', set_url = None)
 
-            raise HTTPException(status_code=404, detail="검색결과가 없습니다.")
+                raise HTTPException(status_code=404, detail="검색결과가 없습니다.")
 
 
     def Search(self, product_name, page_num):
